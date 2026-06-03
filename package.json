@@ -4,7 +4,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "node --watch backend/server.js",
+    "dev": "NODE_ENV=development node --watch index.js",
+    "server": "node --watch backend/server.js",
     "build": "cd frontend && npm install && npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
