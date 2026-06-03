@@ -2,12 +2,26 @@
 const app = require("./src/app");
 const connectDB = require("./src/db/db");
 
-connectDB();
+// Initialize database and start listening
+async function startServer() {
+  try {
+    await connectDB();
+    console.log("Database connection attempt completed");
+  } catch (err) {
+    console.error("Database connection error:", err.message);
+    // Continue even if DB connection fails (fallback enabled)
+  }
 
-// Only listen if this file is run directly (not imported)
-if (require.main === module) {
   app.listen(3000, () => {
     console.log("Server is running on port 3000");
+  });
+}
+
+// Start the server when run directly
+if (require.main === module) {
+  startServer().catch((err) => {
+    console.error("Failed to start server:", err);
+    process.exit(1);
   });
 }
 

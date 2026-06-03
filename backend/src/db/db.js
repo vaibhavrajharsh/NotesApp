@@ -7,41 +7,47 @@ const dbState = {
 };
 
 async function connectDB() {
-  const atlasURI =
-    "mongodb+srv://harshrajj8804_db_user:Harsh0987@milkyway.tb5apzu.mongodb.net/Spidey";
+  // Use MONGODB_URI environment variable for production (Vercel)
+  const mongodbUri = process.env.MONGODB_URI;
   const localURI = "mongodb://127.0.0.1:27017/Spidey";
 
-  console.log("Attempting connection to MongoDB Atlas...");
-  try {
-    await mongoose.connect(atlasURI, {
-      serverSelectionTimeoutMS: 4000,
-    });
-    console.log("Connected to MongoDB Atlas successfully!");
-    dbState.connected = true;
-    return;
-  } catch (atlasErr) {
-    console.warn(
-      "MongoDB Atlas connection failed (likely due to SSL network issue or IP Whitelist restrictions).",
-    );
-    console.warn(`Details: ${atlasErr.message}`);
-
-    console.log(
-      "Attempting connection to local MongoDB instance (mongodb://127.0.0.1:27017)...",
-    );
+  // Try MongoDB Atlas first (via environment variable for production)
+  if (mongodbUri) {
+    console.log("Attempting connection to MongoDB Atlas via MONGODB_URI...");
     try {
-      await mongoose.connect(localURI, {
-        serverSelectionTimeoutMS: 3000,
+      await mongoose.connect(mongodbUri, {
+        serverSelectionTimeoutMS: 5000,
       });
-      console.log("Connected to local MongoDB instance successfully!");
+      console.log("Connected to MongoDB Atlas successfully!");
       dbState.connected = true;
       return;
-    } catch (localErr) {
-      console.warn("Local MongoDB instance connection also failed.");
-      console.log(
-        "Activating premium File-backed Database Fallback (notes_db_fallback.json)...",
-      );
-      dbState.usingFallback = true;
+    } catch (atlasErr) {
+      console.warn("MongoDB Atlas connection failed.");
+      console.warn(`Details: ${atlasErr.message}`);
     }
+  } else {
+    console.log(
+      "MONGODB_URI environment variable not set. Trying local MongoDB...",
+    );
+  }
+
+  // Try local MongoDB for development
+  console.log(
+    "Attempting connection to local MongoDB instance (mongodb://127.0.0.1:27017)...",
+  );
+  try {
+    await mongoose.connect(localURI, {
+      serverSelectionTimeoutMS: 3000,
+    });
+    console.log("Connected to local MongoDB instance successfully!");
+    dbState.connected = true;
+    return;
+  } catch (localErr) {
+    console.warn("Local MongoDB instance connection also failed.");
+    console.log(
+      "Activating File-backed Database Fallback (notes_db_fallback.json)...",
+    );
+    dbState.usingFallback = true;
   }
 }
 
