@@ -11,5 +11,15 @@
     ],
     "createdAt": "2026-06-02T15:40:19.108Z",
     "updatedAt": "2026-06-02T15:41:18.946Z"
+  },
+  {
+    "_id": "fallback_nezkgb2rb",
+    "title": "test",
+    "desc": "checking",
+    "color": "coral",
+    "pinned": false,
+    "tags": [],
+    "createdAt": "2026-06-03T09:28:14.447Z",
+    "updatedAt": "2026-06-03T09:28:14.447Z"
   }
 ]

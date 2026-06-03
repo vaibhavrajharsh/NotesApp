@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import NoteCard from './components/NoteCard';
@@ -26,13 +27,11 @@ export default function App() {
     fetchNotes();
   }, []);
 
-  // REST API Methods
+  // REST API Methods (using Axios)
   const fetchNotes = async () => {
     try {
-      const res = await fetch('/notes');
-      if (!res.ok) throw new Error('Database fetch failed');
-      const data = await res.json();
-      setNotes(data.notes || []);
+      const res = await axios.get('/notes');
+      setNotes(res.data.notes || []);
     } catch (err) {
       console.error('Error fetching notes:', err);
       showToast('Failed to fetch notes from server.', 'error');
@@ -42,15 +41,13 @@ export default function App() {
   const handleSaveNote = async (noteData) => {
     const isEdit = !!selectedNote;
     const url = isEdit ? `/notes/${selectedNote._id}` : '/notes';
-    const method = isEdit ? 'PATCH' : 'POST';
 
     try {
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(noteData)
-      });
-      if (!res.ok) throw new Error('Note save failed');
+      if (isEdit) {
+        await axios.patch(url, noteData);
+      } else {
+        await axios.post(url, noteData);
+      }
       
       setIsNoteModalOpen(false);
       showToast(isEdit ? 'Note updated successfully' : 'Note created successfully');
@@ -63,12 +60,7 @@ export default function App() {
 
   const handleTogglePin = async (id, currentPin) => {
     try {
-      const res = await fetch(`/notes/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pinned: !currentPin })
-      });
-      if (!res.ok) throw new Error('Failed to toggle pin');
+      await axios.patch(`/notes/${id}`, { pinned: !currentPin });
       showToast(!currentPin ? 'Note pinned to top' : 'Note unpinned');
       fetchNotes();
     } catch (err) {
@@ -85,11 +77,7 @@ export default function App() {
   const handleDeleteConfirm = async () => {
     if (!noteToDeleteId) return;
     try {
-      const res = await fetch(`/notes/${noteToDeleteId}`, {
-        method: 'DELETE'
-      });
-      if (!res.ok) throw new Error('Delete note failed');
-      
+      await axios.delete(`/notes/${noteToDeleteId}`);
       setIsDeleteModalOpen(false);
       setNoteToDeleteId(null);
       showToast('Note deleted successfully');
