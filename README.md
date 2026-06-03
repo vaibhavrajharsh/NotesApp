@@ -214,9 +214,16 @@ This project is configured for deployment on [Vercel](https://vercel.com/) with 
    - Select the project
 
 3. **Configure Environment Variables**
-   - In Vercel Dashboard: Settings → Environment Variables
-   - Add `MONGODB_URI` with your MongoDB connection string
-   - Redeploy for changes to take effect
+   - In Vercel Dashboard: Go to your project
+   - Click **Settings** → **Environment Variables**
+   - Add a new environment variable:
+     - **Name**: `MONGODB_URI`
+     - **Value**: Your MongoDB Atlas connection string (e.g., `mongodb+srv://username:password@cluster.mongodb.net/database`)
+     - **Environment**: Select Production, Preview, and Development (or all)
+   - Click **Save**
+   - Go to **Deployments** tab
+   - Click the latest deployment's **three dots menu** → **Redeploy**
+   - Wait for the redeploy to complete
 
 4. **Deploy**
    - Vercel automatically deploys when you push to the main branch
@@ -260,9 +267,29 @@ The `vercel.json` file specifies:
 
 ## Troubleshooting
 
+### Vercel Environment Variable Error
+
+If you see this error during deployment:
+
+```
+Environment Variable "MONGODB_URI" references Secret "mongodb_uri", which does not exist
+```
+
+**Solution**:
+
+1. Remove any secret references from `vercel.json` (already fixed in this project)
+2. Configure environment variables through Vercel Dashboard UI instead:
+   - Go to your project → **Settings** → **Environment Variables**
+   - Add `MONGODB_URI` variable with your MongoDB connection string
+   - Make sure it's enabled for Production environment
+   - Redeploy the project
+
+⚠️ **Never use `@secret_name` syntax in `vercel.json`** - Configure environment variables only through the Vercel dashboard.
+
 ### Vercel "No entrypoint found" Error
 
 If you see this error on Vercel:
+
 ```
 No entrypoint found. Searched for:
 - app.{js,cjs,mjs,ts,cts,mts}
@@ -273,6 +300,7 @@ No entrypoint found. Searched for:
 ```
 
 **Solution**: Ensure:
+
 1. `index.js` exists in the root directory
 2. `package.json` has `"main": "index.js"`
 3. `vercel.json` is in the root directory
@@ -282,6 +310,7 @@ No entrypoint found. Searched for:
 ### MongoDB Connection Issues
 
 If the app can't connect to MongoDB on Vercel:
+
 1. Verify `MONGODB_URI` is set in Vercel Environment Variables
 2. Check that MongoDB Atlas IP whitelist includes Vercel's IPs (or use 0.0.0.0/0 for development)
 3. Ensure the connection string includes the correct username and password
@@ -290,6 +319,7 @@ If the app can't connect to MongoDB on Vercel:
 ### Frontend Not Loading
 
 If the frontend doesn't appear on Vercel:
+
 1. Ensure `npm run build` completes successfully
 2. Check that `frontend/dist` folder is created during build
 3. Verify Express is serving static files from `frontend/dist`
