@@ -175,6 +175,53 @@ The React frontend is built with Vite and includes:
 
 - `npm start` - Start the backend server (production)
 - `npm run dev` - Start the backend server with auto-reload (development)
+- `npm run build` - Build the frontend for production (runs during Vercel deployment)
+
+## Deployment
+
+### Vercel Deployment
+
+This project is configured for deployment on [Vercel](https://vercel.com/) with the `vercel.json` configuration file.
+
+#### Setup Steps
+
+1. **Push code to GitHub**
+
+   ```bash
+   git add .
+   git commit -m "Prepare for Vercel deployment"
+   git push origin main
+   ```
+
+2. **Connect to Vercel**
+   - Go to [vercel.com](https://vercel.com/)
+   - Click "Add New..." → "Project"
+   - Import your GitHub repository
+   - Select the project
+
+3. **Configure Environment Variables**
+   - In Vercel Dashboard: Settings → Environment Variables
+   - Add `MONGODB_URI` with your MongoDB connection string
+   - Redeploy for changes to take effect
+
+4. **Deploy**
+   - Vercel automatically deploys when you push to the main branch
+   - Or manually trigger a deployment from the dashboard
+
+#### Vercel Configuration
+
+The `vercel.json` file specifies:
+
+- Entry point: `backend/server.js`
+- Build command: Installs dependencies and builds the frontend
+- Routes API requests to the backend
+- Serves frontend static files
+
+### Entry Points
+
+- **Root `index.js`**: Simple entry point that requires `backend/server.js`
+- **Root `package.json`**: Points `main` field to `index.js`
+- **vercel.json**: Tells Vercel where to find and how to build the app
 
 ## Notes on Configuration
 
