@@ -324,18 +324,19 @@ If you see this error during deployment:
 Error: No entrypoint found which imports express. Found possible entrypoint: index.js
 ```
 
-**Root Cause**: The entry point was trying to start a listening server with `app.listen()`, but Vercel's serverless functions should NOT listen on ports. Vercel handles all HTTP routing automatically.
+**Root Cause**: Vercel's detection requires the entry point to directly import `express`. If only imported indirectly (through another module), Vercel won't recognize it as a valid Express entry point.
 
 **Solution** (Already fixed in this project):
 
-1. The entry point (`index.js`) now simply exports the Express app
-2. No `app.listen()` call in the entry point for production
+1. The entry point (`index.js`) directly imports `express` at the top
+2. Entry point simply exports the Express app (no `app.listen()`)
 3. Database connection is initiated non-blocking (doesn't block the export)
 4. For local development, use `backend/server.js` which does listen on port 3000
 
 **Current `index.js` structure**:
 
 ```javascript
+const express = require("express"); // Direct import required by Vercel
 const app = require("./backend/src/app");
 const connectDB = require("./backend/src/db/db");
 
@@ -350,7 +351,8 @@ module.exports = app;
 
 This allows Vercel to:
 
-- Import the Express app
+- Detect the direct `express` import
+- Recognize this as a valid Express entry point
 - Use it as a serverless function handler
 - Handle all HTTP requests automatically
 - Scale without managing ports
