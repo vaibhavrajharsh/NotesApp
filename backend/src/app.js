@@ -2,7 +2,7 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
-const noteModel = require('./db/models/note.model');
+const noteModel = require("./db/models/note.model");
 
 const app = express();
 
@@ -13,25 +13,27 @@ app.use(cors());
 app.use(express.json());
 
 // Serve static assets from compiled React dist folder
-app.use(express.static(path.join(__dirname, '../frontend/dist')));
+app.use(express.static(path.join(__dirname, "../../frontend/dist")));
 
 // POST /notes - Create a new note
 app.post("/notes", async (req, res) => {
   try {
     const data = req.body;
     const newNote = await noteModel.create({
-      title: data.title || '',
-      desc: data.desc || '',
-      color: data.color || 'default',
+      title: data.title || "",
+      desc: data.desc || "",
+      color: data.color || "default",
       pinned: data.pinned || false,
-      tags: data.tags || []
+      tags: data.tags || [],
     });
-    res.status(201).json({ 
-      message: "Note created successfully", 
-      note: newNote 
+    res.status(201).json({
+      message: "Note created successfully",
+      note: newNote,
     });
   } catch (err) {
-    res.status(500).json({ message: "Failed to create note", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to create note", error: err.message });
   }
 });
 
@@ -42,10 +44,12 @@ app.get("/notes", async (req, res) => {
     const notes = await noteModel.find().sort({ pinned: -1, updatedAt: -1 });
     res.status(200).json({
       message: "Notes fetched successfully",
-      notes: notes
+      notes: notes,
     });
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch notes", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to fetch notes", error: err.message });
   }
 });
 
@@ -58,16 +62,18 @@ app.delete("/notes/:id", async (req, res) => {
       message: "Note deleted successfully",
     });
   } catch (err) {
-    res.status(500).json({ message: "Failed to delete note", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to delete note", error: err.message });
   }
 });
 
 // Patch /notes/:id - Dynamic patch endpoint supporting title, desc, color, pinned, tags
-app.patch('/notes/:id', async (req, res) => {
+app.patch("/notes/:id", async (req, res) => {
   try {
     const id = req.params.id;
     const fieldsToUpdate = {};
-    
+
     // Explicitly check for fields in req.body to avoid overwriting with undefined
     if (req.body.title !== undefined) fieldsToUpdate.title = req.body.title;
     if (req.body.desc !== undefined) fieldsToUpdate.desc = req.body.desc;
@@ -78,7 +84,7 @@ app.patch('/notes/:id', async (req, res) => {
     const updatedNote = await noteModel.findOneAndUpdate(
       { _id: id },
       { $set: fieldsToUpdate },
-      { new: true } // Return the updated document
+      { new: true }, // Return the updated document
     );
 
     if (!updatedNote) {
@@ -87,16 +93,18 @@ app.patch('/notes/:id', async (req, res) => {
 
     res.status(200).json({
       message: "Note updated successfully",
-      note: updatedNote
+      note: updatedNote,
     });
   } catch (err) {
-    res.status(500).json({ message: "Failed to update note", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to update note", error: err.message });
   }
 });
 
 // Catch-all route to serve the React app index.html for non-API requests
 app.get(/.*/, (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+  res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
 });
 
 module.exports = app;
