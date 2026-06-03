@@ -234,26 +234,38 @@ This project is configured for deployment on [Vercel](https://vercel.com/) with 
 The `vercel.json` file specifies:
 
 - **buildCommand**: `npm run build` - Builds the React frontend
-- **outputDirectory**: `frontend/dist` - Serves the built frontend
+- **No outputDirectory**: This allows Vercel to detect `index.js` as a Node.js entry point
 - **Root entry point** (`index.js`):
-  - Exports the Express app for Vercel
+  - Properly awaits the async database connection
+  - Uses `MONGODB_URI` environment variable from Vercel dashboard
+  - Exports the Express app for Vercel serverless
   - Listens on a port in development mode
-  - Acts as a serverless function in production
-  - Automatically connects to MongoDB
+  - Express serves the built frontend from `frontend/dist`
 
 #### How It Works
 
-1. Vercel detects `index.js` as the entry point from `package.json`
-2. The build step installs all dependencies and builds the React frontend
-3. Express app is configured to serve the React frontend from `frontend/dist`
-4. API requests are handled by the backend Express routes
-5. The entire app runs as a single Node.js serverless function on Vercel
+1. Vercel runs `npm run build` which:
+   - Installs root dependencies
+   - Installs frontend dependencies
+   - Builds the React app to `frontend/dist`
+
+2. Vercel detects `index.js` as the entry point (from `package.json` "main" field)
+
+3. At runtime:
+   - `index.js` is executed as a Node.js serverless function
+   - Database connection is awaited (with fallback support)
+   - Express app serves the React frontend from `frontend/dist`
+   - API requests are handled by backend Express routes
+   - All running on Vercel's infrastructure
 
 ### Entry Points
 
 - **Root `index.js`**: Main entry point for both development and Vercel deployment
-  - Requires and initializes the Express app
-  - Connects to MongoDB
+  - Properly awaits async database connection
+  - Uses `MONGODB_URI` environment variable
+  - Connects to MongoDB Atlas via environment variable
+  - Falls back to local MongoDB if env var not set
+  - Falls back to file-based storage if DB connection fails
   - Exports the app for serverless environments
   - Listens on port 3000 in development
 - **`backend/server.js`**: Standalone backend server
@@ -266,6 +278,37 @@ The `vercel.json` file specifies:
 - **`vercel.json`**: Tells Vercel how to build and serve the app
 
 ## Troubleshooting
+
+### Vercel "No entrypoint found in output directory" Error
+
+If you see this error during deployment:
+
+```
+Error: No entrypoint found in output directory: "frontend/dist"
+```
+
+**Root Cause**: The `vercel.json` file specified an `outputDirectory`, which made Vercel treat the project as a static site builder instead of a Node.js application.
+
+**Solution** (Already fixed in this project):
+
+1. Remove `outputDirectory` from `vercel.json`
+2. Let Vercel auto-detect `index.js` as the Node.js entry point
+3. The Express app in `index.js` handles serving the static frontend
+
+**Current `vercel.json` structure**:
+
+```json
+{
+  "version": 2,
+  "buildCommand": "npm run build"
+}
+```
+
+This allows Vercel to:
+
+- Run the build command first (builds the frontend)
+- Detect `index.js` as the Node.js serverless function entry point
+- Express automatically serves frontend files from `frontend/dist`
 
 ### Vercel Environment Variable Error
 
@@ -286,7 +329,7 @@ Environment Variable "MONGODB_URI" references Secret "mongodb_uri", which does n
 
 ⚠️ **Never use `@secret_name` syntax in `vercel.json`** - Configure environment variables only through the Vercel dashboard.
 
-### Vercel "No entrypoint found" Error
+### Vercel "No entrypoint found" Error (Root Directory)
 
 If you see this error on Vercel:
 
