@@ -236,10 +236,10 @@ The `vercel.json` file specifies:
 - **buildCommand**: `npm run build` - Builds the React frontend
 - **No outputDirectory**: This allows Vercel to detect `index.js` as a Node.js entry point
 - **Root entry point** (`index.js`):
-  - Properly awaits the async database connection
+  - Simply requires the Express app and initiates database connection
+  - Does NOT listen on a port (Vercel handles HTTP for serverless)
   - Uses `MONGODB_URI` environment variable from Vercel dashboard
   - Exports the Express app for Vercel serverless
-  - Listens on a port in development mode
   - Express serves the built frontend from `frontend/dist`
 
 #### How It Works
@@ -251,29 +251,35 @@ The `vercel.json` file specifies:
 
 2. Vercel detects `index.js` as the entry point (from `package.json` "main" field)
 
-3. At runtime:
-   - `index.js` is executed as a Node.js serverless function
-   - Database connection is awaited (with fallback support)
+3. For each HTTP request on Vercel:
+   - Vercel invokes the exported Express app with the request
+   - Database connection is initiated (with fallback support)
    - Express app serves the React frontend from `frontend/dist`
    - API requests are handled by backend Express routes
-   - All running on Vercel's infrastructure
+   - Response is returned to Vercel
+   - All running as Node.js serverless functions
 
 ### Entry Points
 
-- **Root `index.js`**: Main entry point for both development and Vercel deployment
-  - Properly awaits async database connection
+- **Root `index.js`**: Main entry point for Vercel deployment
+  - Imports the Express app from `backend/src/app`
+  - Initiates database connection (non-blocking)
   - Uses `MONGODB_URI` environment variable
   - Connects to MongoDB Atlas via environment variable
   - Falls back to local MongoDB if env var not set
   - Falls back to file-based storage if DB connection fails
-  - Exports the app for serverless environments
-  - Listens on port 3000 in development
-- **`backend/server.js`**: Standalone backend server
-  - Can be run independently
-  - Only listens when run directly (not imported)
-  - Used for `npm run server` command
+  - **Does NOT listen** - Vercel handles HTTP routing
+  - Exports the app directly for serverless execution
+- **`backend/server.js`**: Standalone backend server for local development
+  - Used by `npm run server` command
+  - Properly awaits async database connection
+  - Listens on port 3000 for local development
+  - Can be run independently for testing
+- **Local Development** (`npm run dev`):
+  - Uses `backend/server.js` via `NODE_ENV=development node --watch backend/server.js`
+  - Server listens on port 3000 for hot-reload testing
 - **Root `package.json`**:
-  - `main` field points to `index.js`
+  - `main` field points to `index.js` (for Vercel)
   - Scripts configured for all environments
 - **`vercel.json`**: Tells Vercel how to build and serve the app
 
@@ -309,6 +315,45 @@ This allows Vercel to:
 - Run the build command first (builds the frontend)
 - Detect `index.js` as the Node.js serverless function entry point
 - Express automatically serves frontend files from `frontend/dist`
+
+### Vercel Serverless Entry Point Error
+
+If you see this error during deployment:
+
+```
+Error: No entrypoint found which imports express. Found possible entrypoint: index.js
+```
+
+**Root Cause**: The entry point was trying to start a listening server with `app.listen()`, but Vercel's serverless functions should NOT listen on ports. Vercel handles all HTTP routing automatically.
+
+**Solution** (Already fixed in this project):
+
+1. The entry point (`index.js`) now simply exports the Express app
+2. No `app.listen()` call in the entry point for production
+3. Database connection is initiated non-blocking (doesn't block the export)
+4. For local development, use `backend/server.js` which does listen on port 3000
+
+**Current `index.js` structure**:
+
+```javascript
+const app = require("./backend/src/app");
+const connectDB = require("./backend/src/db/db");
+
+// Initialize DB connection (non-blocking)
+connectDB().catch((err) => {
+  console.error("Database connection error:", err.message);
+});
+
+// Export app for Vercel serverless
+module.exports = app;
+```
+
+This allows Vercel to:
+
+- Import the Express app
+- Use it as a serverless function handler
+- Handle all HTTP requests automatically
+- Scale without managing ports
 
 ### Vercel Environment Variable Error
 
